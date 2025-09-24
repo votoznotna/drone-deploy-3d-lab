@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef, useState } from 'react';
+import { Suspense, useMemo, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
   OrbitControls,
@@ -141,18 +141,28 @@ function ClippingPlane({ clip }: { clip: number }) {
   );
 
   // Apply clipping plane to all materials in the scene
-  useMemo(() => {
-    scene.traverse((obj: any) => {
-      if (obj.material) {
-        const mats = Array.isArray(obj.material)
-          ? obj.material
-          : [obj.material];
-        mats.forEach((m: any) => {
-          m.clippingPlanes = [plane];
-          m.needsUpdate = true;
-        });
-      }
-    });
+  useEffect(() => {
+    const applyClipping = () => {
+      scene.traverse((obj: any) => {
+        if (obj.material) {
+          const mats = Array.isArray(obj.material)
+            ? obj.material
+            : [obj.material];
+          mats.forEach((m: any) => {
+            m.clippingPlanes = [plane];
+            m.needsUpdate = true;
+          });
+        }
+      });
+    };
+
+    // Apply immediately
+    applyClipping();
+
+    // Also apply after a short delay to catch any late-loading materials
+    const timeout = setTimeout(applyClipping, 100);
+
+    return () => clearTimeout(timeout);
   }, [scene, plane]);
 
   return null;
